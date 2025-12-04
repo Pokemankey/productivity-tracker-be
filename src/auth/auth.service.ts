@@ -16,7 +16,7 @@ export class AuthService {
     ) {}
 
     async signup(dto: SignupDto, deviceInfo: string) {
-        const { username, email, password} = dto
+        const { username, email, password } = dto
 
         const exists = await this.prisma.user.findFirst({
             where: {
