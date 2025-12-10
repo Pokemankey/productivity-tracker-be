@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { EndSessionDto } from './dto/end-session.dto';
@@ -6,100 +10,100 @@ import { SessionStatus } from '@prisma/client';
 
 @Injectable()
 export class SessionService {
-    constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-    async create(userId: string, dto: CreateSessionDto) {
-        await this.verifyTaskOwnership(dto.taskId, userId);
+  async create(userId: string, dto: CreateSessionDto) {
+    await this.verifyTaskOwnership(dto.taskId, userId);
 
-        return this.prisma.session.create({
-            data: {
-                userId,
-                taskId: dto.taskId,
-                plannedDurationMinutes: dto.plannedDurationMinutes,
-                status: SessionStatus.PLANNED,
-            },
-        });
+    return this.prisma.session.create({
+      data: {
+        userId,
+        taskId: dto.taskId,
+        plannedDurationMinutes: dto.plannedDurationMinutes,
+        status: SessionStatus.PLANNED,
+      },
+    });
+  }
+
+  async start(id: string, userId: string) {
+    const session = await this.verifySessionOwnership(id, userId);
+    if (session.status !== SessionStatus.PLANNED)
+      throw new BadRequestException('Session cannot be started');
+
+    return this.prisma.session.update({
+      where: { id },
+      data: {
+        startedAt: new Date(),
+        status: SessionStatus.IN_PROGRESS,
+      },
+    });
+  }
+
+  async end(id: string, userId: string, dto: EndSessionDto) {
+    const session = await this.verifySessionOwnership(id, userId);
+
+    if (session.status !== SessionStatus.IN_PROGRESS) {
+      throw new BadRequestException('Session is not active');
     }
 
-    async start(id: string, userId: string) {
-        const session = await this.verifySessionOwnership(id, userId);
-        if (session.status !== SessionStatus.PLANNED)
-        throw new BadRequestException('Session cannot be started');
-
-        return this.prisma.session.update({
-            where: { id },
-            data: {
-                startedAt: new Date(),
-                status: SessionStatus.IN_PROGRESS,
-            },
-        });
+    if (!session.startedAt) {
+      throw new BadRequestException('Session has no start time');
     }
 
-    async end(id: string, userId: string, dto: EndSessionDto) {
-        const session = await this.verifySessionOwnership(id, userId);
+    const endedAt = new Date();
+    const startedAt = session.startedAt;
 
-        if (session.status !== SessionStatus.IN_PROGRESS) {
-            throw new BadRequestException('Session is not active');
-        }
+    const minutes = Math.floor(
+      (endedAt.getTime() - startedAt.getTime()) / 60000,
+    );
 
-        if (!session.startedAt) {
-            throw new BadRequestException('Session has no start time');
-        }
+    const newActualMinutes = session.actualProductiveMinutes + minutes;
 
-        const endedAt = new Date();
-        const startedAt = session.startedAt;
+    const updatedSession = await this.prisma.session.update({
+      where: { id },
+      data: {
+        endedAt,
+        actualProductiveMinutes: newActualMinutes,
+        status: SessionStatus.COMPLETED,
+        notes: dto.notes ?? session.notes,
+      },
+    });
 
-        const minutes = Math.floor(
-            (endedAt.getTime() - startedAt.getTime()) / 60000,
-        );
+    await this.prisma.task.update({
+      where: { id: session.taskId },
+      data: {
+        actualMinutes: { increment: minutes },
+      },
+    });
 
-        const newActualMinutes = session.actualProductiveMinutes + minutes;
+    return updatedSession;
+  }
 
-        const updatedSession = await this.prisma.session.update({
-            where: { id },
-            data: {
-                endedAt,
-                actualProductiveMinutes: newActualMinutes,
-                status: SessionStatus.COMPLETED,
-                notes: dto.notes ?? session.notes,
-            },
-        });
+  async findAll(userId: string) {
+    return this.prisma.session.findMany({
+      where: { userId },
+    });
+  }
 
-        await this.prisma.task.update({
-            where: { id: session.taskId },
-            data: {
-                actualMinutes: { increment: minutes },
-            },
-        });
+  async findOne(id: string, userId: string) {
+    return this.verifySessionOwnership(id, userId);
+  }
 
-        return updatedSession;
-    }
+  private async verifySessionOwnership(id: string, userId: string) {
+    const session = await this.prisma.session.findFirst({
+      where: { id, userId },
+    });
+    if (!session) throw new NotFoundException('Session not found');
 
-    async findAll(userId: string) {
-        return this.prisma.session.findMany({
-            where: { userId },
-        });
-    }
+    return session;
+  }
 
-    async findOne(id: string, userId: string) {
-        return this.verifySessionOwnership(id, userId);
-    }
+  private async verifyTaskOwnership(id: string, userId: string) {
+    const task = await this.prisma.task.findFirst({
+      where: { id, userId },
+    });
+    if (!task) throw new NotFoundException('Task not found for this user');
 
-    private async verifySessionOwnership(id: string, userId: string) {
-        const session = await this.prisma.session.findFirst({
-            where: { id, userId },
-        });
-        if (!session) throw new NotFoundException('Session not found');
-
-        return session;
-    }
-
-    private async verifyTaskOwnership(id: string, userId: string) {
-        const task = await this.prisma.task.findFirst({
-            where: { id, userId },
-        });
-        if (!task) throw new NotFoundException('Task not found for this user');
-
-        return task;
-    }
+    return task;
+  }
 }

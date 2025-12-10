@@ -11,10 +11,13 @@ import { SessionModule } from './session/session.module';
 @Module({
   imports: [
     PrismaModule,
-    AuthModule, 
+    AuthModule,
     ConfigModule.forRoot({
       isGlobal: true,
-    }), TaskModule, GoalModule, SessionModule
+    }),
+    TaskModule,
+    GoalModule,
+    SessionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
