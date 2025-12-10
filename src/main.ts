@@ -5,13 +5,13 @@ import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  
+
   app.enableCors({
-    origin: 'http://localhost:3000',
-    credentials: true, 
-  })
+    origin: 'http://localhost:3001',
+    credentials: true,
+  });
 
   app.use(cookieParser());
 
