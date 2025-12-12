@@ -70,8 +70,8 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  me(@CurrentUser() user: any) {
-    return user;
+  async me(@CurrentUser() user: any) {
+    return await this.authService.me(user.userId);
   }
 
   @Post('logout')

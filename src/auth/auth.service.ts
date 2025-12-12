@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -121,6 +122,21 @@ export class AuthService {
       decoded.email,
       storedToken.deviceInfo,
     );
+  }
+
+  async me(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        username: true,
+        email: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    return user;
   }
 
   private async generateTokens(
