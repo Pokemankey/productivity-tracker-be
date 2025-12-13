@@ -17,8 +17,40 @@ export class GoalService {
   }
 
   async findAll(userId: string) {
-    return this.prisma.goal.findMany({
+    const goals = await this.prisma.goal.findMany({
       where: { userId },
+      include: {
+        tasks: {
+          select: {
+            status: true,
+            actualMinutes: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return goals.map((goal) => {
+      const totalTasks = goal.tasks.length;
+      const completedTasks = goal.tasks.filter(
+        (task) => task.status === 'DONE',
+      ).length;
+
+      const totalMinutes = goal.tasks.reduce(
+        (sum, task) => sum + task.actualMinutes,
+        0,
+      );
+
+      const { tasks, ...goalFields } = goal;
+
+      return {
+        ...goalFields,
+        totalTasks,
+        completedTasks,
+        totalMinutes,
+      };
     });
   }
 
