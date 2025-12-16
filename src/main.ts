@@ -9,7 +9,19 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'http://localhost:3001',
+        'https://flow.pokescloud.net',
+      ];
+
+      // allow requests with no origin (like Postman, curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   });
 

@@ -16,6 +16,8 @@ import type { Request, Response } from 'express';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthGuard } from '@nestjs/passport';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -110,15 +112,17 @@ export class AuthController {
   private setAuthCookies(res: Response, access: string, refresh: string) {
     res.cookie('access_token', access, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: '.pokescloud.net',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('refresh_token', refresh, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: '.pokescloud.net',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
   }

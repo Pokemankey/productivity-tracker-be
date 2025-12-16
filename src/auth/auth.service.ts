@@ -96,7 +96,7 @@ export class AuthService {
     const { refreshToken } = dto;
 
     const decoded = await this.jwt.verifyAsync(refreshToken, {
-      secret: 'supersecret',
+      secret: process.env.JWT_ACCESS_SECRET,
     });
 
     const storedToken = await this.prisma.refreshToken.findUnique({
@@ -148,12 +148,12 @@ export class AuthService {
     const payload = { sub: userId, email: email, jti: jti };
 
     const accessToken = await this.jwt.signAsync(payload, {
-      secret: 'supersecret',
+      secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: '15m',
     });
 
     const refreshToken = await this.jwt.signAsync(payload, {
-      secret: 'supersecret',
+      secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: '7d',
     });
     const saltRounds = 10;
