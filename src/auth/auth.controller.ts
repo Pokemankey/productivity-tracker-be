@@ -114,7 +114,7 @@ export class AuthController {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      domain: '.pokescloud.net',
+      domain: isProd ? '.pokescloud.net' : '',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
@@ -122,7 +122,7 @@ export class AuthController {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
-      domain: '.pokescloud.net',
+      domain: isProd ? '.pokescloud.net' : '',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
   }

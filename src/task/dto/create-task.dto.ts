@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsInt,
   Min,
+  isString,
 } from 'class-validator';
 
 export class CreateTaskDto {
@@ -27,6 +28,10 @@ export class CreateTaskDto {
   @IsOptional()
   @IsEnum(Priority)
   priority?: Priority;
+
+  @IsOptional()
+  @IsString()
+  color?: string;
 
   @IsOptional()
   @IsDateString()

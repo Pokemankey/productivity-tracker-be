@@ -101,6 +101,7 @@ model Task {
   description        String?
   status             TaskStatus @default(TODO)
   priority           Priority @default(MEDIUM)
+  color              String @default("indigo")
   dueDate            DateTime?
   allocatedMinutes   Int?
   actualMinutes      Int @default(0)
